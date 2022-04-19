@@ -316,7 +316,8 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
             from IPython import display
             display.clear_output(wait=True)
         shepherd.update()
-        if monitor(args, main, explorer, sheeps, maybe_print):
+        monitor(args, main, explorer, sheeps, maybe_print)
+        if all(sheep.is_done() for sheep in sheeps):
             # All jobs finished or failed, stop monitoring
             break
         if not args.monitor:
@@ -370,13 +371,13 @@ def _filter_grid_sheeps(patterns: tp.List[str], main: DecoratedMain,
     return out
 
 
-def monitor(args: tp.Any, main: DecoratedMain, explorer: Explorer, herd: tp.List[Sheep],
+def monitor(args: tp.Any, main: DecoratedMain, explorer: Explorer, sheeps: tp.List[Sheep],
             maybe_print: tp.Callable) -> bool:
     """Single iteration of monitoring of the jobs in a Grid.
     Returns `True` if all jobs are done or failed, and `False` otherwise.
     """
-    names, base_name = main.get_names([sheep.xp for sheep in herd])
-    histories = [main.get_xp_history(sheep.xp) for sheep in herd]
+    names, base_name = main.get_names([sheep.xp for sheep in sheeps])
+    histories = [main.get_xp_history(sheep.xp) for sheep in sheeps]
 
     trim = None
     if args.trim is not None:
@@ -388,11 +389,8 @@ def monitor(args: tp.Any, main: DecoratedMain, explorer: Explorer, herd: tp.List
         histories = [metrics[:trim] for metrics in histories]
 
     lines = []
-    finished = True
-    for index, (sheep, history, name) in enumerate(zip(herd, histories, names)):
+    for index, (sheep, history, name) in enumerate(zip(sheeps, histories, names)):
         state = sheep.state()
-        if not sheep.is_done():
-            finished = False
         if state is None:
             state = "N/A"
         else:
@@ -422,4 +420,3 @@ def monitor(args: tp.Any, main: DecoratedMain, explorer: Explorer, herd: tp.List
         ] + explorer.get_grid_metrics()
     )
     maybe_print(tt.treetable(lines, table, colors=explorer.get_colors()))
-    return finished
