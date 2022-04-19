@@ -141,7 +141,6 @@ class HydraMain(DecoratedMain):
         if hasattr(self._base_cfg, "dora"):
             update_from_hydra(dora, self._base_cfg.dora)
         dora.exclude += ["dora.*", "slurm.*"]
-        dora.dir = Path(dora.dir)
         return dora
 
     def get_slurm_config(self) -> SlurmConfig:

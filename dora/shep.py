@@ -53,7 +53,7 @@ class Sheep:
     A Sheep is a specific run for a given XP. Sheeps are managed
     by the Shepherd.
     """
-    def __init__(self, xp: XP, job: SlurmJob = None):
+    def __init__(self, xp: XP, job: SlurmJob = None):  # TODO: the job arg is never used
         self.xp = xp
         self.job: tp.Optional[submitit.SlurmJob] = None
         # Other jobs contain the list of other jobs in the array
@@ -380,7 +380,7 @@ class Shepherd:
                 sheep._other_jobs = jobs  # type: ignore
                 link = self._by_id / job.job_id
                 link = link
-                link.symlink_to(sheep.xp.folder.resolve())
+                link.symlink_to(os.path.relpath(sheep.xp.folder.resolve(), link.parent))
                 if is_array:
                     # We link the array submitit folder to be sure
                     # we keep an history of all arrays the XP was in.

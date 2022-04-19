@@ -139,7 +139,7 @@ def assign_clone(xp: XP, clone: Path):
             code.rename(code.parent / 'old_code')
         else:
             assert "code folder should be symlink or folder", code
-    code.symlink_to(clone)
+    code.symlink_to(clone)  # TODO: Use relative symlink?
 
 
 AnyPath = tp.TypeVar("AnyPath", str, Path)
