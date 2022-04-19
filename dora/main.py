@@ -61,6 +61,7 @@ class DecoratedMain(NamesMixin):
         self.main = main
         self.dora = dora
         module_name = get_module_name(main.__module__)
+        dora.dir = Path(main.__globals__['__file__']).parent.parent / dora.dir.name
         if module_name is None:
             # we are being called in a weird way and definitely not from
             # a Dora command.
