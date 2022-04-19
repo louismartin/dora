@@ -186,7 +186,7 @@ dora:
 ### PyTorch Lightning support
 
 Dora supports PyTorch Lightning (PL) out of the box. Dora will automatically
-capture logged metrics (make sure to use `per_epoch=True`), and handles distribution
+capture logged metrics (make sure to use `on_epoch=True`), and handles distribution
 (you should not pass `gpus=...` or `num_nodes=...` to PL).
 
 ```python

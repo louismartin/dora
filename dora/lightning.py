@@ -145,7 +145,7 @@ def get_trainer(*args, auto_resume=True, add_dora_logger=True, no_unfinished_epo
             You are still responsible for creating the `ModelCheckpoint` callback,
             this only handles the `resume_from_checkpoint` part.
         add_dora_logger (bool): if True, adds a Dora Logger to automatically
-            forward the metrics (those logged with per_epoch=True), otherwise
+            forward the metrics (those logged with on_epoch=True), otherwise
             pushing metrics will be up to you.
         no_unfinished_epochs (bool): if True, deactivates SLURM signal handling
             by PL, which can result in half finished epoch with each interruption.
