@@ -34,7 +34,7 @@ def _filter_metrics(metrics: tp.Dict[str, tp.Any], epoch: bool = True):
         metrics: dict given by PL.
         epoch: if True, keep only epoch level metrics, otherwise, keep only step level metrics.
     """
-    out = {}
+    filtered_metrics = {}
     for key, value in metrics.items():
         if epoch and key.endswith('_step'):
             continue
@@ -44,8 +44,8 @@ def _filter_metrics(metrics: tp.Dict[str, tp.Any], epoch: bool = True):
             key = key.rsplit('_', 1)[0]
         if isinstance(value, torch.Tensor) and value.numel() == 1:
             value = value.item()
-        out[key] = value
-    return out
+        filtered_metrics[key] = value
+    return filtered_metrics
 
 
 class DoraEnvironment(ClusterEnvironment):

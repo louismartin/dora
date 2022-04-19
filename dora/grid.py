@@ -203,19 +203,19 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
 
     to_unlink = []
     old_sheeps = []
-    for child in grid_folder.iterdir():
-        if child.name not in herd.sheeps:
-            to_unlink.append(child)
+    for path in grid_folder.iterdir():
+        if path.name not in herd.sheeps:
+            to_unlink.append(path)
             try:
-                old_sheep = shepherd.get_sheep_from_sig(child.name)
+                old_sheep = shepherd.get_sheep_from_sig(path.name)
             except Exception as error:
-                log(f"Error when trying to load old sheep {child.name}: {error}")
+                log(f"Error when trying to load old sheep {path.name}: {error}")
                 # We fallback on manually loading the job file.
-                job_file = child / main.dora.shep.job_file
+                job_file = path / main.dora.shep.job_file
                 jobs = try_load(job_file)
                 if jobs is not None:
                     job = jobs[0]
-                    log(f"Canceling job {job.job_id} from unloadable sheep {child.name}.")
+                    log(f"Canceling job {job.job_id} from unloadable sheep {path.name}.")
                     shepherd.cancel_lazy(job)
             else:
                 assert old_sheep is not None
