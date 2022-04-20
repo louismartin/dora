@@ -175,7 +175,8 @@ class HydraMain(DecoratedMain):
             raise ValueError(f"Can only process dict, tuple, lists and str, but got {arg}")
         return argv
 
-    def get_name_parts(self, xp: XP) -> OrderedDict:
+    @classmethod
+    def get_name_parts(cls, xp: XP) -> OrderedDict:
         parts = OrderedDict()
         assert xp.delta is not None
         for name, value in xp.delta:
