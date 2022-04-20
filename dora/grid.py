@@ -379,13 +379,11 @@ def monitor(args: tp.Any, main: DecoratedMain, explorer: Explorer, sheeps: tp.Li
     names, base_name = main.get_names([sheep.xp for sheep in sheeps])
     histories = [main.get_xp_history(sheep.xp) for sheep in sheeps]
 
-    trim = None
     if args.trim is not None:
         trim = len(histories[args.trim])
+        histories = [metrics[:trim] for metrics in histories]
     elif args.trim_last:
         trim = min(len(metrics) for metrics in histories)
-
-    if trim is not None:
         histories = [metrics[:trim] for metrics in histories]
 
     lines = []
