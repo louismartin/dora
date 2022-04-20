@@ -122,6 +122,7 @@ class DoraHistoryLogger(Callback):
             return
         metrics = trainer.logged_metrics
         metrics = _filter_metrics(metrics, epoch=True)
+        metrics["step"] = trainer.global_step
         self.link.push_metrics(metrics)
 
 
