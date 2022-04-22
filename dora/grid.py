@@ -88,7 +88,7 @@ class RunGridArgs:
     _from_commandline: bool = False
 
 
-def _get_explore(args, main):
+def _get_explorer(grid_name, main):
     # Finds the explorer.
     grid_package = main.dora.grid_package
     if grid_package is None:
@@ -96,10 +96,10 @@ def _get_explore(args, main):
 
     grids = import_or_fatal(grid_package)
 
-    if args.grid is not None:
-        grid_filename = args.grid.replace('.', '/') + '.py'
+    if grid_name is not None:
+        grid_filename = grid_name.replace('.', '/') + '.py'
         grid_file = Path(grids.__file__).parent / grid_filename
-    if args.grid is None or not grid_file.exists():
+    if grid_name is None or not grid_file.exists():
         candidates = []
         pkg_root = Path(grids.__file__).parent
         for root, folders, files in os.walk(pkg_root):
@@ -108,13 +108,13 @@ def _get_explore(args, main):
                 if fullpath.name.endswith('.py') and not fullpath.name.startswith('_'):
                     fullpath = fullpath.parent / fullpath.stem
                     candidates.append(str(fullpath).replace('/', '.'))
-        if args.grid is not None and not grid_file.exists():
+        if grid_name is not None and not grid_file.exists():
             log(f'No grid file {grid_filename} in package {grid_package}. '
                 'Maybe you made a typo?')
         log(f"Potential grids are: {', '.join(candidates)}")
         sys.exit(0)
 
-    grid_name = grid_package + "." + args.grid
+    grid_name = grid_package + "." + grid_name
     grid = import_or_fatal(grid_name)
 
     try:
@@ -127,7 +127,7 @@ def _get_explore(args, main):
 
 
 def grid_action(args: tp.Any, main: DecoratedMain):
-    explorer = _get_explore(args, main)
+    explorer = _get_explorer(args.grid, main)
     slurm = main.get_slurm_config()
     update_from_args(slurm, args)
     rules = SubmitRules()
