@@ -55,7 +55,7 @@ class DecoratedMain(NamesMixin):
             by the user.
         dora (DoraConfig): configuration for Dora.
     """
-    _slow = False
+    _slow = False  # TODO: Add comment to explain how to use this.
 
     def __init__(self, main: MainFun, dora: DoraConfig):
         self.main = main

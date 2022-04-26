@@ -138,6 +138,19 @@ def grid_action(args: tp.Any, main: DecoratedMain):
     run_grid(main, explorer, args.grid, rules, slurm, grid_args)
 
 
+def _get_herd(shepherd, explorer, slurm, main):
+    herd = Herd()
+    if main._slow:
+        with ProcessPoolExecutor(4) as pool:
+            launcher = Launcher(shepherd, slurm, herd, pool=pool)
+            explorer(launcher)
+            herd.complete()
+    else:
+        launcher = Launcher(shepherd, slurm, herd)
+        explorer(launcher)
+    return herd
+
+
 def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
              rules: SubmitRules = SubmitRules(), slurm: tp.Optional[SlurmConfig] = None,
              args: RunGridArgs = RunGridArgs()) -> tp.List[Sheep]:
@@ -166,16 +179,8 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
     grid_folder = main.dora.dir / main.dora._grids / grid_name
     grid_folder.mkdir(exist_ok=True, parents=True)
 
-    herd = Herd()
     shepherd = Shepherd(main, log=log)
-    if main._slow:
-        with ProcessPoolExecutor(4) as pool:
-            launcher = Launcher(shepherd, slurm, herd, pool=pool)
-            explorer(launcher)
-            herd.complete()
-    else:
-        launcher = Launcher(shepherd, slurm, herd)
-        explorer(launcher)
+    herd = _get_herd(shepherd, explorer, slurm, main)
 
     shepherd.update()
     sheeps = list(herd.sheeps.values())
