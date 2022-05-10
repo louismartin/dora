@@ -88,45 +88,54 @@ class RunGridArgs:
     _from_commandline: bool = False
 
 
-def _get_explorer(grid_name, main):
-    # Finds the explorer.
-    grid_package = main.dora.grid_package
-    if grid_package is None:
-        grid_package = main.package + ".grids"
+def _get_grids_package_name(main):
+    return main.dora.grid_package or main.package + ".grids"
 
-    grids = import_or_fatal(grid_package)
 
-    if grid_name is not None:
-        grid_filename = grid_name.replace('.', '/') + '.py'
-        grid_file = Path(grids.__file__).parent / grid_filename
-    if grid_name is None or not grid_file.exists():
-        candidates = []
-        pkg_root = Path(grids.__file__).parent
-        for root, folders, files in os.walk(pkg_root):
-            for file in files:
-                fullpath = (Path(root) / file).relative_to(pkg_root)
-                if fullpath.name.endswith('.py') and not fullpath.name.startswith('_'):
-                    fullpath = fullpath.parent / fullpath.stem
-                    candidates.append(str(fullpath).replace('/', '.'))
-        if grid_name is not None and not grid_file.exists():
-            log(f'No grid file {grid_filename} in package {grid_package}. '
-                'Maybe you made a typo?')
-        log(f"Potential grids are: {', '.join(candidates)}")
-        sys.exit(0)
+def _get_grids_package_path(main):
+    grids_package = import_or_fatal(_get_grids_package_name(main))
+    return Path(grids_package.__file__).parent
 
-    grid_name = grid_package + "." + grid_name
-    grid = import_or_fatal(grid_name)
 
+def get_candidate_grids(main):
+    def get_grid_name(grid_path, grids_package_path):
+        """e.g. `myrepo/grids/subgrid/grid_name.py` -> `subgrid.grid_name`"""
+        relative_grid_path = grid_path.relative_to(grids_package_path)
+        return str(relative_grid_path.parent / relative_grid_path.stem).replace("/", ".")
+
+    grids_package_path = _get_grids_package_path(main)
+    return [get_grid_name(path, grids_package_path) for path in grids_package_path.glob("[!_]*.py")]
+
+
+def _log_potential_grids(main):
+    log(f"Potential grids are: {', '.join(get_candidate_grids(main))}")
+
+
+def _load_grid_module(main, grid_name):
+    grid_package_name = _get_grids_package_name(main)
+    grids_module_name =  f"{grid_package_name}.{grid_name}"
     try:
-        explorer = grid.explorer
-    except AttributeError:
+        return import_or_fatal(grids_module_name)
+    except SystemExit as e:
+        _log_potential_grids(main)
+        raise e
+
+
+def _get_explorer(grid_name, main):
+    """Finds the explorer."""
+    grid_module = _load_grid_module(main, grid_name)
+    if not hasattr(grid_module, "explorer"):
         fatal(f"{grid_name} has no exploration function `explorer`.")
+    explorer = grid_module.explorer
     if not isinstance(explorer, Explorer):
         fatal(f"{explorer} must be an instance of `dora.Explorer`")
     return explorer
 
 
 def grid_action(args: tp.Any, main: DecoratedMain):
+    if args.grid is None:
+        _log_potential_grids(main)
+        sys.exit(0)
     explorer = _get_explorer(args.grid, main)
     slurm = main.get_slurm_config()
     update_from_args(slurm, args)
