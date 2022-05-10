@@ -121,6 +121,10 @@ def fatal(*args) -> tp.NoReturn:
     sys.exit(1)
 
 
+def warning(*args):
+    simple_log("WARNING:", *args)
+
+
 _dora_handler = None
 
 

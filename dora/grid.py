@@ -25,7 +25,7 @@ import time
 from .conf import SlurmConfig, SubmitRules, update_from_args
 from .explore import Explorer, Launcher, Herd
 from .main import DecoratedMain
-from .log import colorize, simple_log, fatal
+from .log import colorize, simple_log, fatal, warning
 from .shep import Sheep, Shepherd
 from .utils import import_or_fatal, reliable_rmtree, try_load
 
@@ -298,9 +298,10 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
         if args.folder is not None:
             print(sheep.xp.folder)
         elif args.tail is not None:
-            if not sheep.log.exists():
-                fatal(f"Log {sheep.log} does not exist")
-            os.execvp("tail", ["tail", "-n", "200", "-f", sheep.log])
+            if sheep.log.exists():
+                os.execvp("tail", ["tail", "-n", "200", "-f", sheep.log])
+            else:
+                warning(f"Log {sheep.log} does not exist")
         else:
             if not sheep.log.exists():
                 fatal(f"Log file does not exist for sheep {name}.")
