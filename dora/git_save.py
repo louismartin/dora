@@ -116,7 +116,7 @@ def enter_clone(clone: Path):
     """Context manager that temporarily relocates to a clean clone of the
     current git repository.
     """
-    cwd = Path('.').resolve()
+    cwd = Path('.').resolve()  # Don't use cwd but path relative to decorated main
     root = get_git_root()
     relative_path = cwd.relative_to(root)
 

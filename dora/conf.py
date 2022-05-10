@@ -174,4 +174,5 @@ class DoraConfig:
             from .git_save import to_absolute_path
             if value is not None:
                 value = Path(to_absolute_path(value))
+                assert "codes" not in str(value), f"{name} should not be a subfolder of codes"
         super().__setattr__(name, value)
