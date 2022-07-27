@@ -26,6 +26,7 @@ from .distrib import get_distrib_spec
 from .main import DecoratedMain
 from .utils import try_load
 from .xp import XP, _get_sig
+from .log import simple_log, fatal
 
 
 logger = logging.getLogger(__name__)
@@ -253,6 +254,11 @@ class Shepherd:
 
     def _cancel(self, jobs: tp.List[SlurmJob]):
         cancel_cmd = ["scancel"] + [job.job_id for job in jobs]
+        simple_log(f"You are about to cancel jobs with: `{' '.join(cancel_cmd)}`")
+        reply = input("Confirm [yN]: ")
+        if reply.lower() != "y":
+            #fatal("Abort...")
+            return
         logger.debug("Running %s", " ".join(cancel_cmd))
         sp.run(cancel_cmd, check=True)
 
