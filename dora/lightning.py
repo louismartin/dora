@@ -189,7 +189,7 @@ def get_trainer(*args, auto_resume=True, add_dora_logger=True, no_unfinished_epo
 
     resume_from_checkpoint = kwargs.get('resume_from_checkpoint')
     if auto_resume and resume_from_checkpoint is None:
-        last = get_xp().folder / 'last.ckpt'
+        last = get_xp().folder / 'last.ckpt'  # TODO: This assumes that the user saves his checkpoints here.
         if last.is_file():
             resume = str(last)
         else:
