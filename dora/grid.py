@@ -141,10 +141,10 @@ def grid_action(args: tp.Any, main: DecoratedMain):
     update_from_args(slurm, args)
     rules = SubmitRules()
     update_from_args(rules, args)
-    grid_args = RunGridArgs()
-    grid_args._from_commandline = True
-    update_from_args(grid_args, args)
-    run_grid(main, explorer, args.grid, rules, slurm, grid_args)
+    run_grid_args = RunGridArgs()
+    run_grid_args._from_commandline = True
+    update_from_args(run_grid_args, args)
+    run_grid(main, explorer, args.grid, rules, slurm, run_grid_args)
 
 
 def _get_herd(shepherd, explorer, slurm, main):
@@ -162,7 +162,7 @@ def _get_herd(shepherd, explorer, slurm, main):
 
 def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
              rules: SubmitRules = SubmitRules(), slurm: tp.Optional[SlurmConfig] = None,
-             args: RunGridArgs = RunGridArgs()) -> tp.List[Sheep]:
+             run_grid_args: RunGridArgs = RunGridArgs()) -> tp.List[Sheep]:
     """
     Run a grid search, this is the API underlying the `dora grid` command,
     so that it can be used from a notebook.
@@ -193,14 +193,14 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
 
     shepherd.update()
     sheeps = list(herd.sheeps.values())
-    sheeps = _filter_grid_sheeps(args.patterns, main, sheeps)
+    sheeps = _filter_grid_sheeps(run_grid_args.patterns, main, sheeps)
 
-    if args.clear:
-        if args.dry_run:
+    if run_grid_args.clear:
+        if run_grid_args.dry_run:
             fatal("--dry_run is incompatible with --clear.")
         log(f"You are about to restart {len(sheeps)} experiments from the grid {grid_name} "
             "from scratch. This cannot be reverted.")
-        if args._from_commandline:
+        if run_grid_args._from_commandline:
             repl = input("Confirm [yN]: ")
             if repl.lower() != "y":
                 fatal("Abort...")
@@ -237,7 +237,7 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
 
     shepherd.update()  # Update all job status
 
-    if not args.cancel:
+    if not run_grid_args.cancel:
         sheep_map = {sheep.xp.sig: sheep for sheep in sheeps}
         for job_array in herd.job_arrays:
             array_sheeps = [sheep_map[sig] for sig in job_array if sig in sheep_map]
@@ -260,7 +260,7 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
             log(f"Canceling job {old_sheep.job.job_id} for no longer required "
                 f"sheep {old_sheep.xp.sig}/{name}")
 
-    if args.cancel:
+    if run_grid_args.cancel:
         for sheep in sheeps:
             if not sheep.is_done():
                 assert sheep.job is not None
@@ -268,7 +268,7 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
                 log(f"Canceling job {sheep.job.job_id} for sheep {sheep.xp.sig}/{name}")
                 shepherd.cancel_lazy(sheep.job)
 
-    if not args.dry_run:
+    if not run_grid_args.dry_run:
         for sheep in sheeps:
             link = (grid_folder / sheep.xp.sig)
             if link.exists() or link.is_symlink():
@@ -280,21 +280,21 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
 
         for child in to_unlink:
             child.unlink()
-    if args.init:
+    if run_grid_args.init:
         for sheep in sheeps:
             main.init_xp(sheep.xp)
 
-    if args.cancel:
+    if run_grid_args.cancel:
         return sheeps
 
     if not sheeps:
         log("No sheep to handle.")
         return sheeps
 
-    actions = [action for action in [args.folder, args.log, args.tail] if action is not None]
+    actions = [action for action in [run_grid_args.folder, run_grid_args.log, run_grid_args.tail] if action is not None]
 
     if actions:
-        if not args._from_commandline:
+        if not run_grid_args._from_commandline:
             raise RuntimeError("The folder, log, and tail "
                                "flags are only supported from the command line.")
         assert len(actions) == 1
@@ -302,11 +302,11 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
         try:
             sheep = sheeps[index]
         except IndexError:
-            fatal(f"Invalid index {args.folder}")
+            fatal(f"Invalid index {run_grid_args.folder}")
         name = main.get_name(sheep.xp)
-        if args.folder is not None:
+        if run_grid_args.folder is not None:
             print(sheep.xp.folder)
-        elif args.tail is not None:
+        elif run_grid_args.tail is not None:
             if sheep.log.exists():
                 os.execvp("tail", ["tail", "-n", "200", "-f", sheep.log])
             else:
@@ -321,23 +321,23 @@ def run_grid(main: DecoratedMain, explorer: Explorer, grid_name: str,
         return sheeps
 
     maybe_print: tp.Callable
-    if args.silent:
+    if run_grid_args.silent:
         maybe_print = no_print
     else:
         maybe_print = print
     maybe_print(f"Monitoring Grid {grid_name}")
     while True:
-        if args.jupyter and not args.silent:
+        if run_grid_args.jupyter and not run_grid_args.silent:
             from IPython import display
             display.clear_output(wait=True)
         shepherd.update()
-        monitor(args, main, explorer, sheeps, maybe_print)
+        monitor(run_grid_args, main, explorer, sheeps, maybe_print)
         if all(sheep.is_done() for sheep in sheeps):
             # All jobs finished or failed, stop monitoring
             break
-        if not args.monitor:
+        if not run_grid_args.monitor:
             break
-        sleep = int(args.interval * 60)
+        sleep = int(run_grid_args.interval * 60)
         maybe_print()
         for ela in range(sleep):
             out = f'Next update in {sleep - ela:.0f} seconds       '
@@ -386,7 +386,7 @@ def _filter_grid_sheeps(patterns: tp.List[str], main: DecoratedMain,
     return out
 
 
-def monitor(args: tp.Any, main: DecoratedMain, explorer: Explorer, sheeps: tp.List[Sheep],
+def monitor(run_grid_args: RunGridArgs, main: DecoratedMain, explorer: Explorer, sheeps: tp.List[Sheep],
             maybe_print: tp.Callable) -> bool:
     """Single iteration of monitoring of the jobs in a Grid.
     Returns `True` if all jobs are done or failed, and `False` otherwise.
@@ -394,10 +394,10 @@ def monitor(args: tp.Any, main: DecoratedMain, explorer: Explorer, sheeps: tp.Li
     names, base_name = main.get_names([sheep.xp for sheep in sheeps])
     histories = [main.get_xp_history(sheep.xp) for sheep in sheeps]
 
-    if args.trim is not None:
-        trim = len(histories[args.trim])
+    if run_grid_args.trim is not None:
+        trim = len(histories[run_grid_args.trim])
         histories = [metrics[:trim] for metrics in histories]
-    elif args.trim_last:
+    elif run_grid_args.trim_last:
         trim = min(len(metrics) for metrics in histories)
         histories = [metrics[:trim] for metrics in histories]
 
