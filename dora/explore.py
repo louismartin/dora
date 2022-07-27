@@ -235,8 +235,11 @@ class Explorer:
         return self.update_modes.get(metric_name, "last")
 
     def update_metric(self, mode, previous_value, current_value):
+        # TODO: Include in TapExplorer
         if previous_value is None or mode == "last":
             return current_value
+        if current_value is None:
+            return previous_value
         if mode == "max":
             return max(previous_value, current_value)
         if mode == "min":
